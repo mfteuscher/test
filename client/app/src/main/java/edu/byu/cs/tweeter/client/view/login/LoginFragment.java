@@ -103,8 +103,4 @@ public class LoginFragment extends Fragment implements LoginPresenter.View {
         Toast.makeText(getContext(), message, Toast.LENGTH_LONG).show();
     }
 
-    /**
-     * Message handler (i.e., observer) for LoginTask
-     */
-
 }

@@ -41,6 +41,9 @@ public class UserService {
             this.loginObserver = loginObserver;
         }
 
+        /**
+         * Message handler (i.e., observer) for LoginTask
+         */
         @Override
         public void handleMessage(@NonNull Message msg) {
             boolean success = msg.getData().getBoolean(LoginTask.SUCCESS_KEY);
