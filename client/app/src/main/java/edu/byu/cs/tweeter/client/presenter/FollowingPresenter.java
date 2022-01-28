@@ -51,7 +51,6 @@ public class FollowingPresenter {
             isLoading = true;
             view.setLoadingStatus(true);
             followerService.getFollowing(user, PAGE_SIZE, lastFollowee, new GetFollowingObserver());
-
         }
     }
 
