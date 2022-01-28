@@ -35,6 +35,10 @@ public class UserService {
         executor.execute(logoutTask);
     }
 
+    public boolean compareUsers(User selectedUser) {
+        return selectedUser.compareTo(Cache.getInstance().getCurrUser()) == 0;
+    }
+
     public interface LoginObserver {
         void handleSuccess(User user, AuthToken authToken);
 

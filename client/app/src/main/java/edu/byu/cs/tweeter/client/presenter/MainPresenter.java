@@ -1,20 +1,20 @@
 package edu.byu.cs.tweeter.client.presenter;
 
-import android.widget.Toast;
-
 import edu.byu.cs.tweeter.client.model.service.FollowerService;
+import edu.byu.cs.tweeter.client.model.service.StatusService;
 import edu.byu.cs.tweeter.client.model.service.UserService;
-import edu.byu.cs.tweeter.client.view.main.MainActivity;
 import edu.byu.cs.tweeter.model.domain.User;
 
 public class MainPresenter {
     private UserService userService;
     private FollowerService followerService;
+    private StatusService statusService;
     private Activity activity;
 
     public MainPresenter(Activity activity) {
         userService = new UserService();
         followerService = new FollowerService();
+        statusService = new StatusService();
         this.activity = activity;
     }
 
@@ -28,11 +28,30 @@ public class MainPresenter {
         updateSelectedUserFollowingAndFollowers(selectedUser);
     }
 
+    public void followUser(User selectedUser) {
+        activity.displayMessage("Adding " + selectedUser.getName() + "...");
+        followerService.followUser(selectedUser, new FollowObserver());
+        updateSelectedUserFollowingAndFollowers(selectedUser);
+    }
+
+    public void isFollower(User selectedUser) {
+        followerService.isFollower(selectedUser, new IsFollowerObserver());
+    }
+
+    public boolean compareUsers(User selectedUser) {
+        return userService.compareUsers(selectedUser);
+    }
+
+    public void postStatus(String post) {
+        statusService.postStatus(post, new PostStatusObserver());
+    }
+
     public interface Activity {
         void displayMessage(String message);
         void updateFollowingCount(int count);
         void updateFollowersCount(int count);
         void updateFollowButton(boolean removed);
+        void setFollowerButton(boolean isFollower);
     }
 
     public class LogOutObserver implements UserService.LogOutObserver {
@@ -101,6 +120,60 @@ public class MainPresenter {
         public void handleException(Exception e) {
             activity.displayMessage("Failed to unfollow because of exception: " + e.getMessage());
             activity.updateFollowButton(false);
+        }
+    }
+
+    public class FollowObserver implements FollowerService.FollowObserver {
+
+        @Override
+        public void handleSuccess() {
+            activity.updateFollowButton(false);
+        }
+
+        @Override
+        public void handleFailure(String message) {
+            activity.displayMessage("Failed to follow: " + message);
+        }
+
+        @Override
+        public void handleException(Exception e) {
+            activity.displayMessage("Failed to follow because of exception: " + e.getMessage());
+        }
+    }
+
+    public class IsFollowerObserver implements FollowerService.IsFollowerObserver {
+
+        @Override
+        public void handleSuccess(boolean isFollower) {
+            activity.setFollowerButton(isFollower);
+        }
+
+        @Override
+        public void handleFailure(String message) {
+            activity.displayMessage("Failed to determine following relationship: " + message);
+        }
+
+        @Override
+        public void handleException(Exception e) {
+            activity.displayMessage("Failed to determine following relationship because of exception: " + e.getMessage());
+        }
+    }
+
+    public class PostStatusObserver implements StatusService.PostStatusObserver {
+
+        @Override
+        public void handleSuccess() {
+            activity.displayMessage("Successfully Posted!");
+        }
+
+        @Override
+        public void handleFailure(String message) {
+            activity.displayMessage("Failed to post status: " + message);
+        }
+
+        @Override
+        public void handleExceptions(Exception e) {
+            activity.displayMessage("Failed to post status because of exception: " + e.getMessage());
         }
     }
 
