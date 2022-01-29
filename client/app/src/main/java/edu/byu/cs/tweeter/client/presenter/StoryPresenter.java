@@ -51,10 +51,8 @@ public class StoryPresenter {
      * data.
      */
     public void loadMoreItems(User user) {
-        if (!isLoading) {   // This guard is important for avoiding a race condition in the scrolling code.
-            isLoading = true;
-            statusService.GetStory(user, lastStatus, new GetStoryObserver());
-        }
+        isLoading = true;
+        statusService.GetStory(user, lastStatus, new GetStoryObserver());
     }
 
     public interface View {

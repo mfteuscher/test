@@ -317,9 +317,11 @@ public class StoryFragment extends Fragment implements StoryPresenter.View {
          * data.
          */
         void loadMoreItems() {
-            addLoadingFooter();
-            presenter.loadMoreItems(user);
-            removeLoadingFooter();
+            if (!presenter.isLoading()) { // This guard is important for avoiding a race condition in the scrolling code.
+                addLoadingFooter();
+                presenter.loadMoreItems(user);
+                removeLoadingFooter();
+            }
         }
 
         /**
