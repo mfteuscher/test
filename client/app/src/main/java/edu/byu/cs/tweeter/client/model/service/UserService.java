@@ -1,9 +1,7 @@
 package edu.byu.cs.tweeter.client.model.service;
 
-import android.content.Intent;
 import android.os.Handler;
 import android.os.Message;
-import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 
@@ -14,22 +12,18 @@ import edu.byu.cs.tweeter.client.cache.Cache;
 import edu.byu.cs.tweeter.client.model.service.backgroundTask.GetUserTask;
 import edu.byu.cs.tweeter.client.model.service.backgroundTask.LoginTask;
 import edu.byu.cs.tweeter.client.model.service.backgroundTask.LogoutTask;
-import edu.byu.cs.tweeter.client.presenter.LoginPresenter;
-import edu.byu.cs.tweeter.client.presenter.MainPresenter;
-import edu.byu.cs.tweeter.client.view.main.MainActivity;
-import edu.byu.cs.tweeter.client.view.main.story.StoryFragment;
 import edu.byu.cs.tweeter.model.domain.AuthToken;
 import edu.byu.cs.tweeter.model.domain.User;
 
 public class UserService {
 
-    public void login(String alias, String password, LoginPresenter.LoginObserver loginObserver) {
+    public void login(String alias, String password, LoginObserver loginObserver) {
         LoginTask loginTask = new LoginTask(alias, password, new LoginHandler(loginObserver));
         ExecutorService executor = Executors.newSingleThreadExecutor();
         executor.execute(loginTask);
     }
 
-    public void logout(MainPresenter.LogOutObserver observer) {
+    public void logout(LogOutObserver observer) {
         LogoutTask logoutTask = new LogoutTask(Cache.getInstance().getCurrUserAuthToken(), new LogoutHandler(observer));
         ExecutorService executor = Executors.newSingleThreadExecutor();
         executor.execute(logoutTask);
@@ -37,6 +31,13 @@ public class UserService {
 
     public boolean compareUsers(User selectedUser) {
         return selectedUser.compareTo(Cache.getInstance().getCurrUser()) == 0;
+    }
+
+    public void getUser(String username, GetUserObserver observer) {
+        GetUserTask getUserTask = new GetUserTask(Cache.getInstance().getCurrUserAuthToken(),
+                username, new GetUserHandler(observer));
+        ExecutorService executor = Executors.newSingleThreadExecutor();
+        executor.execute(getUserTask);
     }
 
     public interface LoginObserver {
@@ -48,6 +49,12 @@ public class UserService {
     }
 
     public interface LogOutObserver {
+        void handleFailure(String message);
+        void handleException(Exception e);
+    }
+
+    public interface GetUserObserver {
+        void handleSuccess(User user);
         void handleFailure(String message);
         void handleException(Exception e);
     }
@@ -103,6 +110,31 @@ public class UserService {
         }
     }
 
+    /**
+     * Message handler (i.e., observer) for GetUserTask.
+     */
+    private class GetUserHandler extends Handler {
+        private GetUserObserver observer;
+
+        public GetUserHandler(GetUserObserver observer) {
+            this.observer = observer;
+        }
+
+        @Override
+        public void handleMessage(@NonNull Message msg) {
+            boolean success = msg.getData().getBoolean(GetUserTask.SUCCESS_KEY);
+            if (success) {
+                User user = (User) msg.getData().getSerializable(GetUserTask.USER_KEY);
+                observer.handleSuccess(user);
+            } else if (msg.getData().containsKey(GetUserTask.MESSAGE_KEY)) {
+                String message = msg.getData().getString(GetUserTask.MESSAGE_KEY);
+                observer.handleFailure(message);
+            } else if (msg.getData().containsKey(GetUserTask.EXCEPTION_KEY)) {
+                Exception ex = (Exception) msg.getData().getSerializable(GetUserTask.EXCEPTION_KEY);
+                observer.handleException(ex);
+            }
+        }
+    }
 
 
 }
