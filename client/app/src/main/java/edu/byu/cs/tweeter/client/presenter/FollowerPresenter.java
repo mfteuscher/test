@@ -10,13 +10,78 @@ public class FollowerPresenter {
 
     private static final int PAGE_SIZE = 10;
 
-    private View view;
-    private UserService userService;
-    private FollowerService followerService;
+    private final View view;
+    private final UserService userService;
+    private final FollowerService followerService;
 
     private User lastFollower;
     private boolean hasMorePages;
     private boolean isLoading = false;
+
+    public FollowerPresenter(View view) {
+        this.view = view;
+        userService = new UserService();
+        followerService = new FollowerService();
+    }
+
+    public void getUser(String username) {
+        userService.getUser(username, new GetUserObserver());
+    }
+
+    public void getFollowers(User user) {
+        if (!isLoading) {   // This guard is important for avoiding a race condition in the scrolling code.
+            isLoading = true;
+            view.setLoadingFooter(true);
+            followerService.GetFollowers(user, lastFollower, PAGE_SIZE, new GetFollowersObserver());
+        }
+    }
+
+    public interface View {
+        void addFollowers(List<User> followers);
+        void openUserActivity(User user);
+        void displayMessage(String message);
+        void setLoadingFooter(boolean loading);
+    }
+
+    public class GetFollowersObserver implements FollowerService.GetFollowersObserver {
+
+        @Override
+        public void handleSuccess(List<User> followers, boolean morePages, User user) {
+            isLoading = false;
+            view.setLoadingFooter(false);
+            hasMorePages = morePages;
+            lastFollower = user;
+            view.addFollowers(followers);
+        }
+
+        @Override
+        public void handleFailure(String message) {
+            view.displayMessage("Failed to get followers: " + message);
+        }
+
+        @Override
+        public void handleException(Exception e) {
+            view.displayMessage("Failed to get followers because of exception: " + e.getMessage());
+        }
+    }
+
+    public class GetUserObserver implements UserService.GetUserObserver {
+
+        @Override
+        public void handleSuccess(User user) {
+            view.openUserActivity(user);
+        }
+
+        @Override
+        public void handleFailure(String message) {
+            view.displayMessage("Failed to get user's profile: " + message);
+        }
+
+        @Override
+        public void handleException(Exception e) {
+            view.displayMessage("Failed to get user's profile because of exception: " + e.getMessage());
+        }
+    }
 
     public boolean hasMorePages() {
         return hasMorePages;
@@ -32,65 +97,6 @@ public class FollowerPresenter {
 
     public void setLoading(boolean loading) {
         isLoading = loading;
-    }
-
-    public FollowerPresenter(View view) {
-        userService = new UserService();
-        followerService = new FollowerService();
-        this.view = view;
-    }
-
-    public void getUser(String username) {
-        userService.getUser(username, new GetUserObserver());
-    }
-
-    public void getFollowers(User user) {
-        followerService.getFollowers(user, lastFollower, PAGE_SIZE, new GetFollowersObserver());
-    }
-
-    public interface View {
-        void displayMessage(String message);
-        void showFollowersList(User user);
-        void addFollowers(List<User> followers);
-    }
-
-    public class GetUserObserver implements UserService.GetUserObserver {
-
-        @Override
-        public void handleSuccess(User user) {
-            view.showFollowersList(user);
-        }
-
-        @Override
-        public void handleFailure(String message) {
-            view.displayMessage("Failed to get user's profile: " + message);
-        }
-
-        @Override
-        public void handleException(Exception e) {
-            view.displayMessage("Failed to get user's profile because of exception: " + e.getMessage());
-        }
-    }
-
-    public class GetFollowersObserver implements FollowerService.GetFollowersObserver {
-
-        @Override
-        public void handleSuccess(List<User> followers, boolean morePages, User user) {
-            isLoading = false;
-            hasMorePages = morePages;
-            lastFollower = user;
-            view.addFollowers(followers);
-        }
-
-        @Override
-        public void handleFailure(String message) {
-            view.displayMessage("Failed to get followers: " + message);
-        }
-
-        @Override
-        public void handleException(Exception e) {
-            view.displayMessage("Failed to get followers because of exception: " + e.getMessage());
-        }
     }
 
 }

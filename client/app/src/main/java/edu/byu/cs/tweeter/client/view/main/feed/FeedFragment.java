@@ -5,7 +5,6 @@ import android.net.Uri;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
-import android.os.Message;
 import android.text.SpannableString;
 import android.text.Spanned;
 import android.text.TextPaint;
@@ -30,13 +29,8 @@ import org.jetbrains.annotations.NotNull;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 
 import edu.byu.cs.client.R;
-import edu.byu.cs.tweeter.client.model.service.backgroundTask.GetFeedTask;
-import edu.byu.cs.tweeter.client.model.service.backgroundTask.GetUserTask;
-import edu.byu.cs.tweeter.client.cache.Cache;
 import edu.byu.cs.tweeter.client.presenter.FeedPresenter;
 import edu.byu.cs.tweeter.client.view.main.MainActivity;
 import edu.byu.cs.tweeter.model.domain.Status;
@@ -52,10 +46,9 @@ public class FeedFragment extends Fragment implements FeedPresenter.View {
     private static final int LOADING_DATA_VIEW = 0;
     private static final int ITEM_VIEW = 1;
 
-    private static final int PAGE_SIZE = 10;
+    private FeedPresenter presenter;
 
     private User user;
-    private FeedPresenter presenter;
 
     private FeedRecyclerViewAdapter feedRecyclerViewAdapter;
 
@@ -80,7 +73,6 @@ public class FeedFragment extends Fragment implements FeedPresenter.View {
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
                              Bundle savedInstanceState) {
         View view = inflater.inflate(R.layout.fragment_feed, container, false);
-        presenter = new FeedPresenter(this);
 
         //noinspection ConstantConditions
         user = (User) getArguments().getSerializable(USER_KEY);
@@ -95,6 +87,9 @@ public class FeedFragment extends Fragment implements FeedPresenter.View {
 
         feedRecyclerView.addOnScrollListener(new FeedRecyclerViewPaginationScrollListener(layoutManager));
 
+        presenter = new FeedPresenter(this);
+        presenter.loadMoreItems(user);
+
         return view;
     }
 
@@ -104,7 +99,7 @@ public class FeedFragment extends Fragment implements FeedPresenter.View {
     }
 
     @Override
-    public void openUserFeed(User user) {
+    public void openUserActivity(User user) {
         Intent intent = new Intent(getContext(), MainActivity.class);
         intent.putExtra(MainActivity.CURRENT_USER_KEY, user);
         startActivity(intent);
@@ -113,6 +108,12 @@ public class FeedFragment extends Fragment implements FeedPresenter.View {
     @Override
     public void addItems(List<Status> newFeed) {
         feedRecyclerViewAdapter.addItems(newFeed);
+    }
+
+    @Override
+    public void setLoadingFooter(boolean loading) {
+        if (loading) feedRecyclerViewAdapter.addLoadingFooter();
+        else feedRecyclerViewAdapter.removeLoadingFooter();
     }
 
 
@@ -141,12 +142,9 @@ public class FeedFragment extends Fragment implements FeedPresenter.View {
             post = itemView.findViewById(R.id.statusPost);
             datetime = itemView.findViewById(R.id.statusDatetime);
 
-            itemView.setOnClickListener(new View.OnClickListener() {
-                @Override
-                public void onClick(View view) {
-                    Toast.makeText(getContext(), "Getting user's profile...", Toast.LENGTH_LONG).show();
-                    presenter.getUser(userAlias.getText().toString());
-                }
+            itemView.setOnClickListener(view -> {
+                Toast.makeText(getContext(), "Getting user's profile...", Toast.LENGTH_LONG).show();
+                presenter.getUser(userAlias.getText().toString());
             });
         }
 
@@ -211,13 +209,6 @@ public class FeedFragment extends Fragment implements FeedPresenter.View {
     private class FeedRecyclerViewAdapter extends RecyclerView.Adapter<FeedHolder> {
 
         private final List<Status> feed = new ArrayList<>();
-
-        /**
-         * Creates an instance and loads the first page of feed data.
-         */
-        FeedRecyclerViewAdapter() {
-            loadMoreItems();
-        }
 
         /**
          * Adds new statuses to the list from which the RecyclerView retrieves the statuses it displays
@@ -319,12 +310,8 @@ public class FeedFragment extends Fragment implements FeedPresenter.View {
          * Causes the Adapter to display a loading footer and make a request to get more feed
          * data.
          */
-        void loadMoreItems(){
-            if (!presenter.isLoading()) {   // This guard is important for avoiding a race condition in the scrolling code.
-                addLoadingFooter();
-                presenter.loadMoreItems(user);
-                removeLoadingFooter();
-            }
+        void loadMoreItems() {
+            presenter.loadMoreItems(user);
         }
 
         /**
@@ -332,9 +319,9 @@ public class FeedFragment extends Fragment implements FeedPresenter.View {
          * loading footer view) at the bottom of the list.
          */
         private void addLoadingFooter() {
-            addItem(new Status("Dummy Post", new User("firstName", "lastName", "@coolAlias"), "2020-10-31 00:00:00", new ArrayList<String>() {{
+            addItem(new Status("Dummy Post", new User("firstName", "lastName", "@coolAlias"), "2020-10-31 00:00:00", new ArrayList<>() {{
                 add("https://youtube.com");
-            }}, new ArrayList<String>() {{
+            }}, new ArrayList<>() {{
                 add("@Dude1");
             }}));
         }
@@ -346,7 +333,6 @@ public class FeedFragment extends Fragment implements FeedPresenter.View {
         private void removeLoadingFooter() {
             removeItem(feed.get(feed.size() - 1));
         }
-
 
 
     }
@@ -391,7 +377,7 @@ public class FeedFragment extends Fragment implements FeedPresenter.View {
                     // Run this code later on the UI thread
                     final Handler handler = new Handler(Looper.getMainLooper());
                     handler.postDelayed(() -> {
-                            feedRecyclerViewAdapter.loadMoreItems();
+                        feedRecyclerViewAdapter.loadMoreItems();
                     }, 0);
                 }
             }

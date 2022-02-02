@@ -38,8 +38,7 @@ public class LoginFragment extends Fragment implements LoginPresenter.View {
      * @return the fragment.
      */
     public static LoginFragment newInstance() {
-        LoginFragment fragment = new LoginFragment();
-        return fragment;
+        return new LoginFragment();
     }
 
     @Override
@@ -51,40 +50,24 @@ public class LoginFragment extends Fragment implements LoginPresenter.View {
         password = view.findViewById(R.id.loginPassword);
         errorView = view.findViewById(R.id.loginError);
         Button loginButton = view.findViewById(R.id.loginButton);
-        loginButton.setOnClickListener(new View.OnClickListener() {
+        loginButton.setOnClickListener(listener -> {
+            // Login and move to MainActivity.
+            try {
+                presenter.validateLogin(alias.getText(), password.getText());
+                errorView.setText(null);
 
-            @Override
-            public void onClick(View view) {
-                // Login and move to MainActivity.
-                try {
-                    validateLogin();
-                    errorView.setText(null);
+                loginInToast = Toast.makeText(getContext(), "Logging In...", Toast.LENGTH_LONG);
+                loginInToast.show();
 
-                    loginInToast = Toast.makeText(getContext(), "Logging In...", Toast.LENGTH_LONG);
-                    loginInToast.show();
+                // Send the login request.
+                presenter.login(alias.getText().toString(), password.getText().toString());
 
-                    // Send the login request.
-                    presenter.login(alias.getText().toString(), password.getText().toString());
-
-                } catch (Exception e) {
-                    errorView.setText(e.getMessage());
-                }
+            } catch (Exception e) {
+                errorView.setText(e.getMessage());
             }
         });
 
         return view;
-    }
-
-    public void validateLogin() {
-        if (alias.getText().charAt(0) != '@') {
-            throw new IllegalArgumentException("Alias must begin with @.");
-        }
-        if (alias.getText().length() < 2) {
-            throw new IllegalArgumentException("Alias must contain 1 or more characters after the @.");
-        }
-        if (password.getText().length() == 0) {
-            throw new IllegalArgumentException("Password cannot be empty.");
-        }
     }
 
     @Override

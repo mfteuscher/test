@@ -46,8 +46,8 @@ public class StoryFragment extends Fragment implements StoryPresenter.View {
     private static final int LOADING_DATA_VIEW = 0;
     private static final int ITEM_VIEW = 1;
 
-
     private StoryPresenter presenter;
+
     private User user;
 
     private StoryRecyclerViewAdapter storyRecyclerViewAdapter;
@@ -73,7 +73,6 @@ public class StoryFragment extends Fragment implements StoryPresenter.View {
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
                              Bundle savedInstanceState) {
         View view = inflater.inflate(R.layout.fragment_story, container, false);
-        presenter = new StoryPresenter(this);
         //noinspection ConstantConditions
         user = (User) getArguments().getSerializable(USER_KEY);
 
@@ -87,7 +86,22 @@ public class StoryFragment extends Fragment implements StoryPresenter.View {
 
         storyRecyclerView.addOnScrollListener(new StoryRecyclerViewPaginationScrollListener(layoutManager));
 
+        presenter = new StoryPresenter(this);
+        presenter.loadMoreItems(user);
+
         return view;
+    }
+
+    @Override
+    public void addItems(List<Status> newStory) {
+        storyRecyclerViewAdapter.addItems(newStory);
+    }
+
+    @Override
+    public void openUserActivity(User user) {
+        Intent intent = new Intent(getContext(), MainActivity.class);
+        intent.putExtra(MainActivity.CURRENT_USER_KEY, user);
+        startActivity(intent);
     }
 
     @Override
@@ -96,15 +110,9 @@ public class StoryFragment extends Fragment implements StoryPresenter.View {
     }
 
     @Override
-    public void openUserStory(User user) {
-        Intent intent = new Intent(getContext(), MainActivity.class);
-        intent.putExtra(MainActivity.CURRENT_USER_KEY, user);
-        startActivity(intent);
-    }
-
-    @Override
-    public void addItems(List<Status> newStory) {
-        storyRecyclerViewAdapter.addItems(newStory);
+    public void setLoadingFooter(boolean loading) {
+        if (loading) storyRecyclerViewAdapter.addLoadingFooter();
+        else storyRecyclerViewAdapter.removeLoadingFooter();
     }
 
     /**
@@ -131,13 +139,10 @@ public class StoryFragment extends Fragment implements StoryPresenter.View {
             userName = itemView.findViewById(R.id.statusName);
             post = itemView.findViewById(R.id.statusPost);
             datetime = itemView.findViewById(R.id.statusDatetime);
-            
-            itemView.setOnClickListener(new View.OnClickListener() {
-                @Override
-                public void onClick(View view) {
-                    Toast.makeText(getContext(), "Getting user's profile...", Toast.LENGTH_LONG).show();
-                    presenter.getUser(userAlias.getText().toString());
-                }
+
+            itemView.setOnClickListener(view -> {
+                Toast.makeText(getContext(), "Getting user's profile...", Toast.LENGTH_LONG).show();
+                presenter.getUser(userAlias.getText().toString());
             });
         }
 
@@ -207,14 +212,6 @@ public class StoryFragment extends Fragment implements StoryPresenter.View {
     private class StoryRecyclerViewAdapter extends RecyclerView.Adapter<StoryHolder> {
 
         private final List<Status> story = new ArrayList<>();
-
-
-        /**
-         * Creates an instance and loads the first page of story data.
-         */
-        StoryRecyclerViewAdapter() {
-            loadMoreItems();
-        }
 
         /**
          * Adds new statuses to the list from which the RecyclerView retrieves the statuses it displays
@@ -317,11 +314,7 @@ public class StoryFragment extends Fragment implements StoryPresenter.View {
          * data.
          */
         void loadMoreItems() {
-            if (!presenter.isLoading()) { // This guard is important for avoiding a race condition in the scrolling code.
-                addLoadingFooter();
-                presenter.loadMoreItems(user);
-                removeLoadingFooter();
-            }
+            presenter.loadMoreItems(user);
         }
 
         /**
@@ -329,9 +322,9 @@ public class StoryFragment extends Fragment implements StoryPresenter.View {
          * loading footer view) at the bottom of the list.
          */
         private void addLoadingFooter() {
-            addItem(new Status("Dummy Post", new User("firstName", "lastName", "@coolAlias"), "2020-10-31 00:00:00", new ArrayList<String>() {{
+            addItem(new Status("Dummy Post", new User("firstName", "lastName", "@coolAlias"), "2020-10-31 00:00:00", new ArrayList<>() {{
                 add("https://youtube.com");
-            }}, new ArrayList<String>() {{
+            }}, new ArrayList<>() {{
                 add("@Dude1");
             }}));
         }
@@ -386,7 +379,7 @@ public class StoryFragment extends Fragment implements StoryPresenter.View {
                     // Run this code later on the UI thread
                     final Handler handler = new Handler(Looper.getMainLooper());
                     handler.postDelayed(() -> {
-                            storyRecyclerViewAdapter.loadMoreItems();
+                        storyRecyclerViewAdapter.loadMoreItems();
                     }, 0);
                 }
             }

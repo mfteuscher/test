@@ -8,66 +8,37 @@ import edu.byu.cs.tweeter.model.domain.Status;
 import edu.byu.cs.tweeter.model.domain.User;
 
 public class FeedPresenter {
-    private View view;
-    private UserService userService;
-    private StatusService statusService;
+
+    private final View view;
+    private final UserService userService;
+    private final StatusService statusService;
 
     private Status lastStatus;
     private boolean hasMorePages;
     private boolean isLoading = false;
 
-    public boolean hasMorePages() {
-        return hasMorePages;
-    }
-
-    public void setHasMorePages(boolean hasMorePages) {
-        this.hasMorePages = hasMorePages;
-    }
-
-    public boolean isLoading() {
-        return isLoading;
-    }
-
-    public void setLoading(boolean loading) {
-        isLoading = loading;
-    }
-
     public FeedPresenter(View view) {
+        this.view = view;
         userService = new UserService();
         statusService = new StatusService();
-        this.view = view;
-    }
-
-    public void getUser(String username) {
-            userService.getUser(username, new GetUserObserver());
-    }
-
-    public void loadMoreItems(User user) {
-            isLoading = true;
-            statusService.getFeed(user, lastStatus, new GetFeedObserver());
     }
 
     public interface View {
         void displayMessage(String message);
-        void openUserFeed(User user);
+        void openUserActivity(User user);
         void addItems(List<Status> newFeed);
+        void setLoadingFooter(boolean loading);
     }
 
-    public class GetUserObserver implements UserService.GetUserObserver {
+    public void getUser(String username) {
+        userService.getUser(username, new GetUserObserver());
+    }
 
-        @Override
-        public void handleSuccess(User user) {
-            view.openUserFeed(user);
-        }
-
-        @Override
-        public void handleFailure(String message) {
-            view.displayMessage("Failed to get user's profile: " + message);
-        }
-
-        @Override
-        public void handleException(Exception e) {
-            view.displayMessage("Failed to get user's profile because of exception: " + e.getMessage());
+    public void loadMoreItems(User user) {
+        if (!isLoading) {   // This guard is important for avoiding a race condition in the scrolling code.
+            isLoading = true;
+            view.setLoadingFooter(true);
+            statusService.GetFeed(user, lastStatus, new GetFeedObserver());
         }
     }
 
@@ -76,6 +47,7 @@ public class FeedPresenter {
         @Override
         public void handleSuccess(List<Status> statuses, boolean morePages, Status status) {
             isLoading = false;
+            view.setLoadingFooter(false);
             lastStatus = status;
             hasMorePages = morePages;
             view.addItems(statuses);
@@ -92,6 +64,39 @@ public class FeedPresenter {
         }
     }
 
+    public class GetUserObserver implements UserService.GetUserObserver {
+
+        @Override
+        public void handleSuccess(User user) {
+            view.openUserActivity(user);
+        }
+
+        @Override
+        public void handleFailure(String message) {
+            view.displayMessage("Failed to get user's profile: " + message);
+        }
+
+        @Override
+        public void handleException(Exception e) {
+            view.displayMessage("Failed to get user's profile because of exception: " + e.getMessage());
+        }
+    }
+
+    public boolean hasMorePages() {
+        return hasMorePages;
+    }
+
+    public void setHasMorePages(boolean hasMorePages) {
+        this.hasMorePages = hasMorePages;
+    }
+
+    public boolean isLoading() {
+        return isLoading;
+    }
+
+    public void setLoading(boolean loading) {
+        isLoading = loading;
+    }
 
 
 }

@@ -10,28 +10,12 @@ public class FollowingPresenter {
 
     private static final int PAGE_SIZE = 10;
 
-    private View view;
-    private FollowerService followerService;
-    private UserService userService;
+    private final View view;
+    private final FollowerService followerService;
+    private final UserService userService;
 
     private User lastFollowee;
     private boolean hasMorePages;
-
-    public boolean hasMorePages() {
-        return hasMorePages;
-    }
-
-    public void setHasMorePages(boolean hasMorePages) {
-        this.hasMorePages = hasMorePages;
-    }
-
-    public boolean isLoading() {
-        return isLoading;
-    }
-
-    public void setLoading(boolean loading) {
-        isLoading = loading;
-    }
 
     private boolean isLoading = false;
 
@@ -48,29 +32,30 @@ public class FollowingPresenter {
 
 
     public interface View {
-        void displayErrorMessage(String message);
-        void setLoadingStatus(boolean value);
         void addFollowees(List<User> followees);
-        void showFollowingList(User user);
+        void openUserActivity(User user);
+        void displayErrorMessage(String message);
+        void setLoadingStatus(boolean loading);
     }
 
     public void loadMoreItems(User user) {
         if (!isLoading) {   // This guard is important for avoiding a race condition in the scrolling code.
             isLoading = true;
             view.setLoadingStatus(true);
-            followerService.getFollowing(user, PAGE_SIZE, lastFollowee, new GetFollowingObserver());
+            followerService.GetFollowing(user, PAGE_SIZE, lastFollowee, new GetFollowingObserver());
         }
     }
 
     public class GetFollowingObserver implements FollowerService.GetFollowingObserver {
 
         @Override
-        public void handleSuccess(List<User> followees, boolean hasMorePages) {
+        public void handleSuccess(List<User> followees, boolean morePages) {
             isLoading = false;
             view.setLoadingStatus(false);
+            hasMorePages = morePages;
             lastFollowee = (followees.size() > 0) ? followees.get(followees.size() - 1) : null;
             view.addFollowees(followees);
-            setHasMorePages(hasMorePages);
+            setHasMorePages(morePages);
         }
 
         @Override
@@ -92,7 +77,7 @@ public class FollowingPresenter {
 
         @Override
         public void handleSuccess(User user) {
-            view.showFollowingList(user);
+            view.openUserActivity(user);
         }
 
         @Override
@@ -104,6 +89,22 @@ public class FollowingPresenter {
         public void handleException(Exception e) {
             view.displayErrorMessage("Failed to get user's profile because of exception: " + e.getMessage());
         }
+    }
+
+    public boolean hasMorePages() {
+        return hasMorePages;
+    }
+
+    public void setHasMorePages(boolean hasMorePages) {
+        this.hasMorePages = hasMorePages;
+    }
+
+    public boolean isLoading() {
+        return isLoading;
+    }
+
+    public void setLoading(boolean loading) {
+        isLoading = loading;
     }
 
 }

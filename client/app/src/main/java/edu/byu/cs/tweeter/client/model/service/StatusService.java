@@ -2,7 +2,6 @@ package edu.byu.cs.tweeter.client.model.service;
 
 import android.os.Handler;
 import android.os.Message;
-import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 
@@ -19,7 +18,6 @@ import edu.byu.cs.tweeter.client.cache.Cache;
 import edu.byu.cs.tweeter.client.model.service.backgroundTask.GetFeedTask;
 import edu.byu.cs.tweeter.client.model.service.backgroundTask.GetStoryTask;
 import edu.byu.cs.tweeter.client.model.service.backgroundTask.PostStatusTask;
-import edu.byu.cs.tweeter.client.view.main.feed.FeedFragment;
 import edu.byu.cs.tweeter.model.domain.Status;
 import edu.byu.cs.tweeter.model.domain.User;
 
@@ -27,11 +25,14 @@ public class StatusService {
 
     private static final int PAGE_SIZE = 10;
 
-    public void postStatus(String post, PostStatusObserver postStatusObserver) {
+    public void PostStatus(String post, PostStatusObserver postStatusObserver) {
         try {
-            Status newStatus = new Status(post, Cache.getInstance().getCurrUser(), getFormattedDateTime(), parseURLs(post), parseMentions(post));
+            Status newStatus = new Status(post, Cache.getInstance().getCurrUser(),
+                    getFormattedDateTime(), parseURLs(post), parseMentions(post));
+
             PostStatusTask statusTask = new PostStatusTask(Cache.getInstance().getCurrUserAuthToken(),
                     newStatus, new PostStatusHandler(postStatusObserver));
+
             ExecutorService executor = Executors.newSingleThreadExecutor();
             executor.execute(statusTask);
         } catch (Exception ex) {
@@ -39,14 +40,28 @@ public class StatusService {
         }
     }
 
-    public String getFormattedDateTime() throws ParseException {
+    public void GetStory(User user, Status lastStatus, GetStoryObserver observer) {
+        GetStoryTask getStoryTask = new GetStoryTask(Cache.getInstance().getCurrUserAuthToken(),
+                user, PAGE_SIZE, lastStatus, new GetStoryHandler(observer));
+        ExecutorService executor = Executors.newSingleThreadExecutor();
+        executor.execute(getStoryTask);
+    }
+
+    public void GetFeed(User user, Status lastStatus, GetFeedObserver observer) {
+        GetFeedTask getFeedTask = new GetFeedTask(Cache.getInstance().getCurrUserAuthToken(),
+                user, PAGE_SIZE, lastStatus, new GetFeedHandler(observer));
+        ExecutorService executor = Executors.newSingleThreadExecutor();
+        executor.execute(getFeedTask);
+    }
+
+    private String getFormattedDateTime() throws ParseException {
         SimpleDateFormat userFormat = new SimpleDateFormat("yyyy-MM-dd hh:mm:ss");
         SimpleDateFormat statusFormat = new SimpleDateFormat("MMM d yyyy h:mm aaa");
 
         return statusFormat.format(userFormat.parse(LocalDate.now().toString() + " " + LocalTime.now().toString().substring(0, 8)));
     }
 
-    public List<String> parseURLs(String post) {
+    private List<String> parseURLs(String post) {
         List<String> containedUrls = new ArrayList<>();
         for (String word : post.split("\\s")) {
             if (word.startsWith("http://") || word.startsWith("https://")) {
@@ -62,7 +77,7 @@ public class StatusService {
         return containedUrls;
     }
 
-    public List<String> parseMentions(String post) {
+    private List<String> parseMentions(String post) {
         List<String> containedMentions = new ArrayList<>();
 
         for (String word : post.split("\\s")) {
@@ -77,7 +92,7 @@ public class StatusService {
         return containedMentions;
     }
 
-    public int findUrlEndIndex(String word) {
+    private int findUrlEndIndex(String word) {
         if (word.contains(".com")) {
             int index = word.indexOf(".com");
             index += 4;
@@ -103,20 +118,6 @@ public class StatusService {
         }
     }
 
-    public void GetStory(User user, Status lastStatus, GetStoryObserver observer) {
-        GetStoryTask getStoryTask = new GetStoryTask(Cache.getInstance().getCurrUserAuthToken(),
-                user, PAGE_SIZE, lastStatus, new GetStoryHandler(observer));
-        ExecutorService executor = Executors.newSingleThreadExecutor();
-        executor.execute(getStoryTask);
-    }
-
-    public void getFeed(User user, Status lastStatus, GetFeedObserver observer) {
-        GetFeedTask getFeedTask = new GetFeedTask(Cache.getInstance().getCurrUserAuthToken(),
-                user, PAGE_SIZE, lastStatus, new GetFeedHandler(observer));
-        ExecutorService executor = Executors.newSingleThreadExecutor();
-        executor.execute(getFeedTask);
-    }
-
     public interface PostStatusObserver {
         void handleSuccess();
         void handleFailure(String message);
@@ -136,9 +137,8 @@ public class StatusService {
     }
 
     // PostStatusHandler
-
     private class PostStatusHandler extends Handler {
-        private PostStatusObserver observer;
+        private final PostStatusObserver observer;
 
         public PostStatusHandler(PostStatusObserver observer) {
             this.observer = observer;
@@ -147,9 +147,9 @@ public class StatusService {
         @Override
         public void handleMessage(@NonNull Message msg) {
             boolean success = msg.getData().getBoolean(PostStatusTask.SUCCESS_KEY);
-            if (success) {
+            if (success)
                 observer.handleSuccess();
-            } else if (msg.getData().containsKey(PostStatusTask.MESSAGE_KEY)) {
+            else if (msg.getData().containsKey(PostStatusTask.MESSAGE_KEY)) {
                 String message = msg.getData().getString(PostStatusTask.MESSAGE_KEY);
                 observer.handleFailure(message);
             } else if (msg.getData().containsKey(PostStatusTask.EXCEPTION_KEY)) {
@@ -163,7 +163,7 @@ public class StatusService {
      * Message handler (i.e., observer) for GetStoryTask.
      */
     private class GetStoryHandler extends Handler {
-        private GetStoryObserver observer;
+        private final GetStoryObserver observer;
 
         public GetStoryHandler(GetStoryObserver observer) {
             this.observer = observer;
@@ -191,10 +191,12 @@ public class StatusService {
      * Message handler (i.e., observer) for GetFeedTask.
      */
     private class GetFeedHandler extends Handler {
-        private GetFeedObserver observer;
+        private final GetFeedObserver observer;
+
         public GetFeedHandler(GetFeedObserver observer) {
             this.observer = observer;
         }
+
         @Override
         public void handleMessage(@NonNull Message msg) {
             boolean success = msg.getData().getBoolean(GetFeedTask.SUCCESS_KEY);

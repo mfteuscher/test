@@ -30,17 +30,6 @@ public class UserService {
         executor.execute(logoutTask);
     }
 
-    public boolean compareUsers(User selectedUser) {
-        return selectedUser.compareTo(Cache.getInstance().getCurrUser()) == 0;
-    }
-
-    public void getUser(String username, GetUserObserver observer) {
-        GetUserTask getUserTask = new GetUserTask(Cache.getInstance().getCurrUserAuthToken(),
-                username, new GetUserHandler(observer));
-        ExecutorService executor = Executors.newSingleThreadExecutor();
-        executor.execute(getUserTask);
-    }
-
     public void registerUser(String firstName, String lastName, String alias, String password,
                              String imageBytesBase64, RegisterObserver observer) {
         RegisterTask registerTask = new RegisterTask(firstName, lastName, alias, password,
@@ -50,21 +39,31 @@ public class UserService {
         executor.execute(registerTask);
     }
 
-    public interface LoginObserver {
-        void handleSuccess(User user, AuthToken authToken);
-
-        void handleFailure(String message);
-
-        void handleException(Exception e);
+    public void getUser(String username, GetUserObserver observer) {
+        GetUserTask getUserTask = new GetUserTask(Cache.getInstance().getCurrUserAuthToken(),
+                username, new GetUserHandler(observer));
+        ExecutorService executor = Executors.newSingleThreadExecutor();
+        executor.execute(getUserTask);
     }
 
-    public interface LogOutObserver {
-        void handleFailure(String message);
-        void handleException(Exception e);
+    public boolean compareUsers(User selectedUser) {
+        return selectedUser.compareTo(Cache.getInstance().getCurrUser()) == 0;
     }
 
     public interface GetUserObserver {
         void handleSuccess(User user);
+        void handleFailure(String message);
+        void handleException(Exception e);
+    }
+
+    public interface LoginObserver {
+        void handleSuccess(User user, AuthToken authToken);
+        void handleFailure(String message);
+        void handleException(Exception e);
+    }
+
+    public interface LogOutObserver {
+        void handleSuccess();
         void handleFailure(String message);
         void handleException(Exception e);
     }
@@ -75,62 +74,11 @@ public class UserService {
         void handleException(Exception e);
     }
 
-    private class LoginHandler extends Handler {
-
-        private LoginObserver loginObserver;
-
-        public LoginHandler(LoginObserver loginObserver) {
-            this.loginObserver = loginObserver;
-        }
-
-        /**
-         * Message handler (i.e., observer) for LoginTask
-         */
-        @Override
-        public void handleMessage(@NonNull Message msg) {
-            boolean success = msg.getData().getBoolean(LoginTask.SUCCESS_KEY);
-            if (success) {
-                User loggedInUser = (User) msg.getData().getSerializable(LoginTask.USER_KEY);
-                AuthToken authToken = (AuthToken) msg.getData().getSerializable(LoginTask.AUTH_TOKEN_KEY);
-                loginObserver.handleSuccess(loggedInUser, authToken);
-            } else if (msg.getData().containsKey(LoginTask.MESSAGE_KEY)) {
-                String message = msg.getData().getString(LoginTask.MESSAGE_KEY);
-                loginObserver.handleFailure(message);
-            } else if (msg.getData().containsKey(LoginTask.EXCEPTION_KEY)) {
-                Exception ex = (Exception) msg.getData().getSerializable(LoginTask.EXCEPTION_KEY);
-                loginObserver.handleException(ex);
-            }
-        }
-    }
-
-    // LogoutHandler
-
-    private class LogoutHandler extends Handler {
-        LogOutObserver observer;
-
-        public LogoutHandler(LogOutObserver observer) {
-            this.observer = observer;
-        }
-        @Override
-        public void handleMessage(@NonNull Message msg) {
-            boolean success = msg.getData().getBoolean(LogoutTask.SUCCESS_KEY);
-            if (success) {
-                Cache.getInstance().clearCache();
-            } else if (msg.getData().containsKey(LogoutTask.MESSAGE_KEY)) {
-                String message = msg.getData().getString(LogoutTask.MESSAGE_KEY);
-                observer.handleFailure(message);
-            } else if (msg.getData().containsKey(LogoutTask.EXCEPTION_KEY)) {
-                Exception ex = (Exception) msg.getData().getSerializable(LogoutTask.EXCEPTION_KEY);
-                observer.handleException(ex);
-            }
-        }
-    }
-
     /**
      * Message handler (i.e., observer) for GetUserTask.
      */
     private class GetUserHandler extends Handler {
-        private GetUserObserver observer;
+        private final GetUserObserver observer;
 
         public GetUserHandler(GetUserObserver observer) {
             this.observer = observer;
@@ -152,11 +100,61 @@ public class UserService {
         }
     }
 
+    private class LoginHandler extends Handler {
+
+        private final LoginObserver observer;
+
+        public LoginHandler(LoginObserver observer) {
+            this.observer = observer;
+        }
+
+        /**
+         * Message handler (i.e., observer) for LoginTask
+         */
+        @Override
+        public void handleMessage(@NonNull Message msg) {
+            boolean success = msg.getData().getBoolean(LoginTask.SUCCESS_KEY);
+            if (success) {
+                User loggedInUser = (User) msg.getData().getSerializable(LoginTask.USER_KEY);
+                AuthToken authToken = (AuthToken) msg.getData().getSerializable(LoginTask.AUTH_TOKEN_KEY);
+                observer.handleSuccess(loggedInUser, authToken);
+            } else if (msg.getData().containsKey(LoginTask.MESSAGE_KEY)) {
+                String message = msg.getData().getString(LoginTask.MESSAGE_KEY);
+                observer.handleFailure(message);
+            } else if (msg.getData().containsKey(LoginTask.EXCEPTION_KEY)) {
+                Exception ex = (Exception) msg.getData().getSerializable(LoginTask.EXCEPTION_KEY);
+                observer.handleException(ex);
+            }
+        }
+    }
+
+    // LogoutHandler
+    private class LogoutHandler extends Handler {
+        LogOutObserver observer;
+
+        public LogoutHandler(LogOutObserver observer) {
+            this.observer = observer;
+        }
+
+        @Override
+        public void handleMessage(@NonNull Message msg) {
+            boolean success = msg.getData().getBoolean(LogoutTask.SUCCESS_KEY);
+            if (success) {
+                Cache.getInstance().clearCache();
+                observer.handleSuccess();
+            } else if (msg.getData().containsKey(LogoutTask.MESSAGE_KEY)) {
+                String message = msg.getData().getString(LogoutTask.MESSAGE_KEY);
+                observer.handleFailure(message);
+            } else if (msg.getData().containsKey(LogoutTask.EXCEPTION_KEY)) {
+                Exception ex = (Exception) msg.getData().getSerializable(LogoutTask.EXCEPTION_KEY);
+                observer.handleException(ex);
+            }
+        }
+    }
 
     // RegisterHandler
-
     private class RegisterHandler extends Handler {
-        private RegisterObserver observer;
+        private final RegisterObserver observer;
 
         public RegisterHandler(RegisterObserver observer) {
             this.observer = observer;

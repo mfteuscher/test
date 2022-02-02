@@ -4,7 +4,6 @@ import android.content.Intent;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
-import android.os.Message;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -24,13 +23,8 @@ import org.jetbrains.annotations.NotNull;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 
 import edu.byu.cs.client.R;
-import edu.byu.cs.tweeter.client.model.service.backgroundTask.GetFollowersTask;
-import edu.byu.cs.tweeter.client.model.service.backgroundTask.GetUserTask;
-import edu.byu.cs.tweeter.client.cache.Cache;
 import edu.byu.cs.tweeter.client.presenter.FollowerPresenter;
 import edu.byu.cs.tweeter.client.view.main.MainActivity;
 import edu.byu.cs.tweeter.model.domain.User;
@@ -47,6 +41,7 @@ public class FollowersFragment extends Fragment implements FollowerPresenter.Vie
     private static final int ITEM_VIEW = 1;
 
     private FollowerPresenter presenter;
+
     private User user;
 
     private FollowersRecyclerViewAdapter followersRecyclerViewAdapter;
@@ -72,7 +67,6 @@ public class FollowersFragment extends Fragment implements FollowerPresenter.Vie
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
                              Bundle savedInstanceState) {
         View view = inflater.inflate(R.layout.fragment_followers, container, false);
-        presenter = new FollowerPresenter(this);
         //noinspection ConstantConditions
         user = (User) getArguments().getSerializable(USER_KEY);
 
@@ -86,6 +80,9 @@ public class FollowersFragment extends Fragment implements FollowerPresenter.Vie
 
         followersRecyclerView.addOnScrollListener(new FollowRecyclerViewPaginationScrollListener(layoutManager));
 
+        presenter = new FollowerPresenter(this);
+        presenter.getFollowers(user);
+
         return view;
     }
 
@@ -95,7 +92,7 @@ public class FollowersFragment extends Fragment implements FollowerPresenter.Vie
     }
 
     @Override
-    public void showFollowersList(User user) {
+    public void openUserActivity(User user) {
         Intent intent = new Intent(getContext(), MainActivity.class);
         intent.putExtra(MainActivity.CURRENT_USER_KEY, user);
         startActivity(intent);
@@ -104,6 +101,12 @@ public class FollowersFragment extends Fragment implements FollowerPresenter.Vie
     @Override
     public void addFollowers(List<User> followers) {
         followersRecyclerViewAdapter.addItems(followers);
+    }
+
+    @Override
+    public void setLoadingFooter(boolean loading) {
+        if (loading) followersRecyclerViewAdapter.addLoadingFooter();
+        else followersRecyclerViewAdapter.removeLoadingFooter();
     }
 
     /**
@@ -127,12 +130,7 @@ public class FollowersFragment extends Fragment implements FollowerPresenter.Vie
             userAlias = itemView.findViewById(R.id.userAlias);
             userName = itemView.findViewById(R.id.userName);
 
-            itemView.setOnClickListener(new View.OnClickListener() {
-                @Override
-                public void onClick(View view) {
-                    presenter.getUser(userAlias.getText().toString());
-                }
-            });
+            itemView.setOnClickListener(view -> presenter.getUser(userAlias.getText().toString()));
         }
 
         /**
@@ -143,11 +141,12 @@ public class FollowersFragment extends Fragment implements FollowerPresenter.Vie
         void bindUser(User user) {
             if (user == null)
                 Log.e(LOG_TAG, "user is null!");
-            userAlias.setText(user.getAlias());
-            userName.setText(user.getName());
+            else {
+                userAlias.setText(user.getAlias());
+                userName.setText(user.getName());
 
-            Picasso.get().load(user.getImageUrl()).into(userImage);
-
+                Picasso.get().load(user.getImageUrl()).into(userImage);
+            }
         }
 
     }
@@ -158,13 +157,6 @@ public class FollowersFragment extends Fragment implements FollowerPresenter.Vie
     private class FollowersRecyclerViewAdapter extends RecyclerView.Adapter<FollowersHolder> {
 
         private final List<User> users = new ArrayList<>();
-
-        /**
-         * Creates an instance and loads the first page of following data.
-         */
-        FollowersRecyclerViewAdapter() {
-            loadMoreItems();
-        }
 
         /**
          * Adds new users to the list from which the RecyclerView retrieves the users it displays
@@ -267,11 +259,7 @@ public class FollowersFragment extends Fragment implements FollowerPresenter.Vie
          * data.
          */
         void loadMoreItems() {
-            if (!presenter.isLoading()) {   // This guard is important for avoiding a race condition in the scrolling code.
-                addLoadingFooter();
-                presenter.getFollowers(user);
-                removeLoadingFooter();
-            }
+            presenter.getFollowers(user);
         }
 
         /**

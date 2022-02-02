@@ -4,7 +4,6 @@ import android.content.Intent;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
-import android.os.Message;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -23,12 +22,8 @@ import org.jetbrains.annotations.NotNull;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 
 import edu.byu.cs.client.R;
-import edu.byu.cs.tweeter.client.cache.Cache;
-import edu.byu.cs.tweeter.client.model.service.backgroundTask.GetUserTask;
 import edu.byu.cs.tweeter.client.presenter.FollowingPresenter;
 import edu.byu.cs.tweeter.client.view.main.MainActivity;
 import edu.byu.cs.tweeter.model.domain.User;
@@ -90,29 +85,26 @@ public class FollowingFragment extends Fragment implements FollowingPresenter.Vi
     }
 
     @Override
-    public void displayErrorMessage(String message) {
-        Toast.makeText(getContext(), message, Toast.LENGTH_LONG).show();
-    }
-
-    @Override
-    public void setLoadingStatus(boolean value) {
-        if (value) {
-            followingRecyclerViewAdapter.addLoadingFooter();
-        } else {
-            followingRecyclerViewAdapter.removeLoadingFooter();
-        }
-    }
-
-    @Override
     public void addFollowees(List<User> followees) {
         followingRecyclerViewAdapter.addItems(followees);
     }
 
     @Override
-    public void showFollowingList(User user) {
+    public void openUserActivity(User user) {
         Intent intent = new Intent(getContext(), MainActivity.class);
         intent.putExtra(MainActivity.CURRENT_USER_KEY, user);
         startActivity(intent);
+    }
+
+    @Override
+    public void displayErrorMessage(String message) {
+        Toast.makeText(getContext(), message, Toast.LENGTH_LONG).show();
+    }
+
+    @Override
+    public void setLoadingStatus(boolean loading) {
+        if (loading) followingRecyclerViewAdapter.addLoadingFooter();
+        else followingRecyclerViewAdapter.removeLoadingFooter();
     }
 
     /**
@@ -136,12 +128,7 @@ public class FollowingFragment extends Fragment implements FollowingPresenter.Vi
             userAlias = itemView.findViewById(R.id.userAlias);
             userName = itemView.findViewById(R.id.userName);
 
-            itemView.setOnClickListener(new View.OnClickListener() {
-                @Override
-                public void onClick(View view) {
-                    presenter.getUser(userAlias.getText().toString());
-                }
-            });
+            itemView.setOnClickListener(view -> presenter.getUser(userAlias.getText().toString()));
         }
 
         /**

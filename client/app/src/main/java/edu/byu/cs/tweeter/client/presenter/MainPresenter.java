@@ -6,64 +6,93 @@ import edu.byu.cs.tweeter.client.model.service.UserService;
 import edu.byu.cs.tweeter.model.domain.User;
 
 public class MainPresenter {
-    private UserService userService;
-    private FollowerService followerService;
-    private StatusService statusService;
-    private Activity activity;
+
+    private final Activity activity;
+    private final UserService userService;
+    private final FollowerService followerService;
+    private final StatusService statusService;
 
     public MainPresenter(Activity activity) {
+        this.activity = activity;
         userService = new UserService();
         followerService = new FollowerService();
         statusService = new StatusService();
-        this.activity = activity;
     }
 
-    public void updateSelectedUserFollowingAndFollowers(User user) {
-        followerService.getFollowingAndFollowerCount(user, new GetFollowingCountObserver(), new GetFollowerCountObserver());
-    }
-
-    public void unfollowUser(User selectedUser) {
-        activity.displayMessage("Removing " + selectedUser.getName() + "...");
-        followerService.unfollowUser(selectedUser, new UnfollowObserver());
-        updateSelectedUserFollowingAndFollowers(selectedUser);
-    }
-
-    public void followUser(User selectedUser) {
-        activity.displayMessage("Adding " + selectedUser.getName() + "...");
-        followerService.followUser(selectedUser, new FollowObserver());
-        updateSelectedUserFollowingAndFollowers(selectedUser);
+    public interface Activity {
+        void updateFollowersCount(int count);
+        void updateFollowingCount(int count);
+        void updateFollowButton(boolean removed);
+        void setFollowerButton(boolean isFollower);
+        void logoutUser();
+        void displayMessage(String message);
     }
 
     public void isFollower(User selectedUser) {
         followerService.isFollower(selectedUser, new IsFollowerObserver());
     }
 
+    public void followUser(User selectedUser) {
+        activity.displayMessage("Adding " + selectedUser.getName() + "...");
+        followerService.FollowUser(selectedUser, new FollowObserver());
+        updateSelectedUserFollowingAndFollowers(selectedUser);
+    }
+
+    public void unfollowUser(User selectedUser) {
+        activity.displayMessage("Removing " + selectedUser.getName() + "...");
+        followerService.UnfollowUser(selectedUser, new UnfollowObserver());
+        updateSelectedUserFollowingAndFollowers(selectedUser);
+    }
+
+    public void updateSelectedUserFollowingAndFollowers(User user) {
+        followerService.GetFollowingAndFollowerCount(user, new GetFollowingCountObserver(), new GetFollowerCountObserver());
+    }
+
+    public void postStatus(String post) {
+        statusService.PostStatus(post, new PostStatusObserver());
+    }
+
     public boolean compareUsers(User selectedUser) {
         return userService.compareUsers(selectedUser);
     }
 
-    public void postStatus(String post) {
-        statusService.postStatus(post, new PostStatusObserver());
+    public void logOut() {
+        userService.logout(new LogOutObserver());
     }
 
-    public interface Activity {
-        void displayMessage(String message);
-        void updateFollowingCount(int count);
-        void updateFollowersCount(int count);
-        void updateFollowButton(boolean removed);
-        void setFollowerButton(boolean isFollower);
-    }
+    public class IsFollowerObserver implements FollowerService.IsFollowerObserver {
 
-    public class LogOutObserver implements UserService.LogOutObserver {
+        @Override
+        public void handleSuccess(boolean isFollower) {
+            activity.setFollowerButton(isFollower);
+        }
 
         @Override
         public void handleFailure(String message) {
-            activity.displayMessage("Failed to logout: " + message);
+            activity.displayMessage("Failed to determine following relationship: " + message);
         }
 
         @Override
         public void handleException(Exception e) {
-            activity.displayMessage("Failed to logout because of exception: " + e.getMessage());
+            activity.displayMessage("Failed to determine following relationship because of exception: " + e.getMessage());
+        }
+    }
+
+    public class GetFollowerCountObserver implements FollowerService.GetFollowerCountObserver {
+
+        @Override
+        public void handleSuccess(int count) {
+            activity.updateFollowersCount(count);
+        }
+
+        @Override
+        public void handleFailure(String message) {
+            activity.displayMessage("Failed to get followers count: " + message);
+        }
+
+        @Override
+        public void handleException(Exception e) {
+            activity.displayMessage("Failed to get followers count because of exception: " + e.getMessage());
         }
     }
 
@@ -85,21 +114,21 @@ public class MainPresenter {
         }
     }
 
-    public class GetFollowerCountObserver implements FollowerService.GetFollowerCountObserver {
+    public class FollowObserver implements FollowerService.FollowObserver {
 
         @Override
-        public void handleSuccess(int count) {
-            activity.updateFollowersCount(count);
+        public void handleSuccess() {
+            activity.updateFollowButton(false);
         }
 
         @Override
         public void handleFailure(String message) {
-            activity.displayMessage("Failed to get followers count: " + message);
+            activity.displayMessage("Failed to follow: " + message);
         }
 
         @Override
         public void handleException(Exception e) {
-            activity.displayMessage("Failed to get followers count because of exception: " + e.getMessage());
+            activity.displayMessage("Failed to follow because of exception: " + e.getMessage());
         }
     }
 
@@ -123,42 +152,6 @@ public class MainPresenter {
         }
     }
 
-    public class FollowObserver implements FollowerService.FollowObserver {
-
-        @Override
-        public void handleSuccess() {
-            activity.updateFollowButton(false);
-        }
-
-        @Override
-        public void handleFailure(String message) {
-            activity.displayMessage("Failed to follow: " + message);
-        }
-
-        @Override
-        public void handleException(Exception e) {
-            activity.displayMessage("Failed to follow because of exception: " + e.getMessage());
-        }
-    }
-
-    public class IsFollowerObserver implements FollowerService.IsFollowerObserver {
-
-        @Override
-        public void handleSuccess(boolean isFollower) {
-            activity.setFollowerButton(isFollower);
-        }
-
-        @Override
-        public void handleFailure(String message) {
-            activity.displayMessage("Failed to determine following relationship: " + message);
-        }
-
-        @Override
-        public void handleException(Exception e) {
-            activity.displayMessage("Failed to determine following relationship because of exception: " + e.getMessage());
-        }
-    }
-
     public class PostStatusObserver implements StatusService.PostStatusObserver {
 
         @Override
@@ -177,10 +170,22 @@ public class MainPresenter {
         }
     }
 
+    public class LogOutObserver implements UserService.LogOutObserver {
 
+        @Override
+        public void handleSuccess() {
+            activity.logoutUser();
+        }
 
-    public void logOut() {
-        userService.logout(new LogOutObserver());
+        @Override
+        public void handleFailure(String message) {
+            activity.displayMessage("Failed to logout: " + message);
+        }
+
+        @Override
+        public void handleException(Exception e) {
+            activity.displayMessage("Failed to logout because of exception: " + e.getMessage());
+        }
     }
 
 }

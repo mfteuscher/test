@@ -36,7 +36,6 @@ public class MainActivity extends AppCompatActivity implements StatusDialogFragm
     private MainPresenter presenter;
 
     private Toast logOutToast;
-    private Toast postingToast;
     private User selectedUser;
     private TextView followeeCount;
     private TextView followerCount;
@@ -48,11 +47,10 @@ public class MainActivity extends AppCompatActivity implements StatusDialogFragm
         setContentView(R.layout.activity_main);
 
         selectedUser = (User) getIntent().getSerializableExtra(CURRENT_USER_KEY);
-        if (selectedUser == null) {
-            throw new RuntimeException("User not passed to activity");
-        }
+        if (selectedUser == null) throw new RuntimeException("User not passed to activity");
 
-        SectionsPagerAdapter sectionsPagerAdapter = new SectionsPagerAdapter(this, getSupportFragmentManager(), selectedUser);
+        SectionsPagerAdapter sectionsPagerAdapter =
+                new SectionsPagerAdapter(this, getSupportFragmentManager(), selectedUser);
         ViewPager viewPager = findViewById(R.id.view_pager);
         viewPager.setOffscreenPageLimit(1);
         viewPager.setAdapter(sectionsPagerAdapter);
@@ -61,12 +59,9 @@ public class MainActivity extends AppCompatActivity implements StatusDialogFragm
 
         FloatingActionButton fab = findViewById(R.id.fab);
 
-        fab.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                StatusDialogFragment statusDialogFragment = new StatusDialogFragment();
-                statusDialogFragment.show(getSupportFragmentManager(), "post-status-dialog");
-            }
+        fab.setOnClickListener(view -> {
+            StatusDialogFragment statusDialogFragment = new StatusDialogFragment();
+            statusDialogFragment.show(getSupportFragmentManager(), "post-status-dialog");
         });
 
         presenter = new MainPresenter(this);
@@ -90,24 +85,18 @@ public class MainActivity extends AppCompatActivity implements StatusDialogFragm
         followButton = findViewById(R.id.followButton);
 
 
-        if (presenter.compareUsers(selectedUser)) {
-            followButton.setVisibility(View.GONE);
-        } else {
+        if (presenter.compareUsers(selectedUser)) followButton.setVisibility(View.GONE);
+        else {
             followButton.setVisibility(View.VISIBLE);
             presenter.isFollower(selectedUser);
         }
 
-        followButton.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                followButton.setEnabled(false);
+        followButton.setOnClickListener(v -> {
+            followButton.setEnabled(false);
 
-                if (followButton.getText().toString().equals(v.getContext().getString(R.string.following))) {
-                    presenter.unfollowUser(selectedUser);
-                } else {
-                    presenter.followUser(selectedUser);
-                }
-            }
+            if (followButton.getText().toString().equals(v.getContext().getString(R.string.following))) {
+                presenter.unfollowUser(selectedUser);
+            } else presenter.followUser(selectedUser);
         });
     }
 
@@ -123,21 +112,31 @@ public class MainActivity extends AppCompatActivity implements StatusDialogFragm
         if (item.getItemId() == R.id.logoutMenu) {
             logOutToast = Toast.makeText(this, "Logging Out...", Toast.LENGTH_LONG);
             logOutToast.show();
-            logoutUser();
+            //Clear user data (cached data).
+            presenter.logOut();
             return true;
-        } else {
-            return super.onOptionsItemSelected(item);
-        }
+        } else return super.onOptionsItemSelected(item);
     }
 
-    public void logoutUser() {
-        //Revert to login screen.
-        Intent intent = new Intent(this, LoginActivity.class);
-        //Clear everything so that the main activity is recreated with the login page.
-        intent.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP);
-        //Clear user data (cached data).
-        presenter.logOut();
-        startActivity(intent);
+    @Override
+    public void onStatusPosted(String post) {
+        Toast postingToast = Toast.makeText(this, "Posting Status...", Toast.LENGTH_LONG);
+        postingToast.show();
+
+        presenter.postStatus(post);
+
+        postingToast.cancel();
+
+    }
+
+    @Override
+    public void updateFollowersCount(int count) {
+        followerCount.setText(getString(R.string.followerCount, String.valueOf(count)));
+    }
+
+    @Override
+    public void updateFollowingCount(int count) {
+        followeeCount.setText(getString(R.string.followeeCount, String.valueOf(count)));
     }
 
     // If logged in user if a follower of the selected user, display the follow button as "following"
@@ -150,17 +149,6 @@ public class MainActivity extends AppCompatActivity implements StatusDialogFragm
             followButton.setText(R.string.follow);
             followButton.setBackgroundColor(getResources().getColor(R.color.colorAccent));
         }
-    }
-
-    @Override
-    public void onStatusPosted(String post) {
-        postingToast = Toast.makeText(this, "Posting Status...", Toast.LENGTH_LONG);
-        postingToast.show();
-
-        presenter.postStatus(post);
-
-        postingToast.cancel();
-
     }
 
     public void updateFollowButton(boolean removed) {
@@ -176,20 +164,18 @@ public class MainActivity extends AppCompatActivity implements StatusDialogFragm
         followButton.setEnabled(true);
     }
 
+    public void logoutUser() {
+        logOutToast.cancel();
+        //Revert to login screen.
+        Intent intent = new Intent(this, LoginActivity.class);
+        //Clear everything so that the main activity is recreated with the login page.
+        intent.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP);
+        startActivity(intent);
+    }
+
     @Override
     public void displayMessage(String message) {
         Toast.makeText(MainActivity.this, message, Toast.LENGTH_LONG).show();
-    }
-
-
-
-    public void updateFollowingCount(int count) {
-        followeeCount.setText(getString(R.string.followeeCount, String.valueOf(count)));
-    }
-
-    @Override
-    public void updateFollowersCount(int count) {
-        followerCount.setText(getString(R.string.followerCount, String.valueOf(count)));
     }
 
 }
