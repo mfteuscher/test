@@ -2,30 +2,29 @@ package edu.byu.cs.tweeter.client.presenter;
 
 import edu.byu.cs.tweeter.client.model.service.FollowerService;
 import edu.byu.cs.tweeter.client.model.service.StatusService;
-import edu.byu.cs.tweeter.client.model.service.UserService;
+import edu.byu.cs.tweeter.client.model.service.backgroundTask.observer.GetCountObserver;
+import edu.byu.cs.tweeter.client.model.service.backgroundTask.observer.SimpleNotificationObserver;
+import edu.byu.cs.tweeter.client.model.service.backgroundTask.observer.iIsFollowerObserver;
+import edu.byu.cs.tweeter.client.presenter.view.View;
 import edu.byu.cs.tweeter.model.domain.User;
 
-public class MainPresenter {
+public class MainPresenter extends Presenter {
 
-    private final Activity activity;
-    private final UserService userService;
     private final FollowerService followerService;
     private final StatusService statusService;
 
     public MainPresenter(Activity activity) {
-        this.activity = activity;
-        userService = new UserService();
+        super(activity);
         followerService = new FollowerService();
         statusService = new StatusService();
     }
 
-    public interface Activity {
+    public interface Activity extends View {
         void updateFollowersCount(int count);
         void updateFollowingCount(int count);
         void updateFollowButton(boolean removed);
         void setFollowerButton(boolean isFollower);
         void logoutUser();
-        void displayMessage(String message);
     }
 
     public void isFollower(User selectedUser) {
@@ -33,13 +32,13 @@ public class MainPresenter {
     }
 
     public void followUser(User selectedUser) {
-        activity.displayMessage("Adding " + selectedUser.getName() + "...");
+        view.displayMessage("Adding " + selectedUser.getName() + "...");
         followerService.FollowUser(selectedUser, new FollowObserver());
         updateSelectedUserFollowingAndFollowers(selectedUser);
     }
 
     public void unfollowUser(User selectedUser) {
-        activity.displayMessage("Removing " + selectedUser.getName() + "...");
+        view.displayMessage("Removing " + selectedUser.getName() + "...");
         followerService.UnfollowUser(selectedUser, new UnfollowObserver());
         updateSelectedUserFollowingAndFollowers(selectedUser);
     }
@@ -60,132 +59,100 @@ public class MainPresenter {
         userService.logout(new LogOutObserver());
     }
 
-    public class IsFollowerObserver implements FollowerService.IsFollowerObserver {
+    public class IsFollowerObserver extends Observer implements iIsFollowerObserver {
 
         @Override
         public void handleSuccess(boolean isFollower) {
-            activity.setFollowerButton(isFollower);
+            getActivity().setFollowerButton(isFollower);
         }
 
         @Override
-        public void handleFailure(String message) {
-            activity.displayMessage("Failed to determine following relationship: " + message);
-        }
-
-        @Override
-        public void handleException(Exception e) {
-            activity.displayMessage("Failed to determine following relationship because of exception: " + e.getMessage());
+        protected String getActionType() {
+            return "determine following relationship";
         }
     }
 
-    public class GetFollowerCountObserver implements FollowerService.GetFollowerCountObserver {
+    public class GetFollowerCountObserver extends Observer implements GetCountObserver {
 
         @Override
         public void handleSuccess(int count) {
-            activity.updateFollowersCount(count);
+            getActivity().updateFollowersCount(count);
         }
 
         @Override
-        public void handleFailure(String message) {
-            activity.displayMessage("Failed to get followers count: " + message);
-        }
-
-        @Override
-        public void handleException(Exception e) {
-            activity.displayMessage("Failed to get followers count because of exception: " + e.getMessage());
+        protected String getActionType() {
+            return "get followers count";
         }
     }
 
-    public class GetFollowingCountObserver implements FollowerService.GetFollowingCountObserver {
+    public class GetFollowingCountObserver extends Observer implements GetCountObserver {
 
         @Override
         public void handleSuccess(int count) {
-            activity.updateFollowingCount(count);
+            getActivity().updateFollowingCount(count);
         }
 
         @Override
-        public void handleFailure(String message) {
-            activity.displayMessage("Failed to get following count: " + message);
-        }
-
-        @Override
-        public void handleException(Exception e) {
-            activity.displayMessage("Failed to get following count because of exception: " + e.getMessage());
+        protected String getActionType() {
+            return "get following count";
         }
     }
 
-    public class FollowObserver implements FollowerService.FollowObserver {
+    public class FollowObserver extends Observer implements SimpleNotificationObserver {
 
         @Override
         public void handleSuccess() {
-            activity.updateFollowButton(false);
+            getActivity().updateFollowButton(false);
         }
 
         @Override
-        public void handleFailure(String message) {
-            activity.displayMessage("Failed to follow: " + message);
-        }
-
-        @Override
-        public void handleException(Exception e) {
-            activity.displayMessage("Failed to follow because of exception: " + e.getMessage());
+        protected String getActionType() {
+            return "follow";
         }
     }
 
-    public class UnfollowObserver implements FollowerService.UnfollowObserver {
+    public class UnfollowObserver extends Observer implements SimpleNotificationObserver {
 
         @Override
         public void handleSuccess() {
-            activity.updateFollowButton(true);
+            getActivity().updateFollowButton(true);
         }
 
         @Override
-        public void handleFailure(String message) {
-            activity.displayMessage("Failed to unfollow: " + message);
-            activity.updateFollowButton(false);
-        }
-
-        @Override
-        public void handleException(Exception e) {
-            activity.displayMessage("Failed to unfollow because of exception: " + e.getMessage());
-            activity.updateFollowButton(false);
+        protected String getActionType() {
+            return "unfollow";
         }
     }
 
-    public class PostStatusObserver implements StatusService.PostStatusObserver {
+    public class PostStatusObserver extends Observer implements SimpleNotificationObserver {
 
         @Override
         public void handleSuccess() {
-            activity.displayMessage("Successfully Posted!");
+            getActivity().displayMessage("Successfully Posted!");
         }
 
         @Override
-        public void handleFailure(String message) {
-            activity.displayMessage("Failed to post status: " + message);
+        protected String getActionType() {
+            return "post status";
+        }
+
+    }
+
+    public class LogOutObserver extends Observer implements SimpleNotificationObserver {
+
+        @Override
+        public void handleSuccess() {
+            getActivity().logoutUser();
         }
 
         @Override
-        public void handleExceptions(Exception e) {
-            activity.displayMessage("Failed to post status because of exception: " + e.getMessage());
+        protected String getActionType() {
+            return "logout";
         }
     }
 
-    public class LogOutObserver implements UserService.LogOutObserver {
-
-        @Override
-        public void handleSuccess() {
-            activity.logoutUser();
-        }
-
-        @Override
-        public void handleFailure(String message) {
-            activity.displayMessage("Failed to logout: " + message);
-        }
-
-        @Override
-        public void handleException(Exception e) {
-            activity.displayMessage("Failed to logout because of exception: " + e.getMessage());
-        }
+    private Activity getActivity() {
+        return (Activity) view;
     }
 
 }

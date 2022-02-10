@@ -32,6 +32,7 @@ import java.util.List;
 
 import edu.byu.cs.client.R;
 import edu.byu.cs.tweeter.client.presenter.FeedPresenter;
+import edu.byu.cs.tweeter.client.presenter.view.PagedView;
 import edu.byu.cs.tweeter.client.view.main.MainActivity;
 import edu.byu.cs.tweeter.model.domain.Status;
 import edu.byu.cs.tweeter.model.domain.User;
@@ -39,7 +40,7 @@ import edu.byu.cs.tweeter.model.domain.User;
 /**
  * Implements the "Feed" tab.
  */
-public class FeedFragment extends Fragment implements FeedPresenter.View {
+public class FeedFragment extends Fragment implements PagedView<Status> {
     private static final String LOG_TAG = "FeedFragment";
     private static final String USER_KEY = "UserKey";
 
@@ -88,7 +89,7 @@ public class FeedFragment extends Fragment implements FeedPresenter.View {
         feedRecyclerView.addOnScrollListener(new FeedRecyclerViewPaginationScrollListener(layoutManager));
 
         presenter = new FeedPresenter(this);
-        presenter.loadMoreItems(user);
+        presenter.loadMoreItems();
 
         return view;
     }
@@ -99,21 +100,21 @@ public class FeedFragment extends Fragment implements FeedPresenter.View {
     }
 
     @Override
-    public void openUserActivity(User user) {
+    public void setLoading(boolean loading) {
+        if (loading) feedRecyclerViewAdapter.addLoadingFooter();
+        else feedRecyclerViewAdapter.removeLoadingFooter();
+    }
+
+    @Override
+    public void addItems(List<Status> items) {
+        feedRecyclerViewAdapter.addItems(items);
+    }
+
+    @Override
+    public void navigateToUser(User user) {
         Intent intent = new Intent(getContext(), MainActivity.class);
         intent.putExtra(MainActivity.CURRENT_USER_KEY, user);
         startActivity(intent);
-    }
-
-    @Override
-    public void addItems(List<Status> newFeed) {
-        feedRecyclerViewAdapter.addItems(newFeed);
-    }
-
-    @Override
-    public void setLoadingFooter(boolean loading) {
-        if (loading) feedRecyclerViewAdapter.addLoadingFooter();
-        else feedRecyclerViewAdapter.removeLoadingFooter();
     }
 
 
@@ -311,7 +312,7 @@ public class FeedFragment extends Fragment implements FeedPresenter.View {
          * data.
          */
         void loadMoreItems() {
-            presenter.loadMoreItems(user);
+            presenter.loadMoreItems();
         }
 
         /**

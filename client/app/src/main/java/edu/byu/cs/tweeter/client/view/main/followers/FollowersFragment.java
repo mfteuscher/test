@@ -26,13 +26,14 @@ import java.util.List;
 
 import edu.byu.cs.client.R;
 import edu.byu.cs.tweeter.client.presenter.FollowerPresenter;
+import edu.byu.cs.tweeter.client.presenter.view.PagedView;
 import edu.byu.cs.tweeter.client.view.main.MainActivity;
 import edu.byu.cs.tweeter.model.domain.User;
 
 /**
  * Implements the "Followers" tab.
  */
-public class FollowersFragment extends Fragment implements FollowerPresenter.View {
+public class FollowersFragment extends Fragment implements PagedView<User> {
 
     private static final String LOG_TAG = "FollowersFragment";
     private static final String USER_KEY = "UserKey";
@@ -81,7 +82,7 @@ public class FollowersFragment extends Fragment implements FollowerPresenter.Vie
         followersRecyclerView.addOnScrollListener(new FollowRecyclerViewPaginationScrollListener(layoutManager));
 
         presenter = new FollowerPresenter(this);
-        presenter.getFollowers(user);
+        presenter.loadMoreItems();
 
         return view;
     }
@@ -92,21 +93,21 @@ public class FollowersFragment extends Fragment implements FollowerPresenter.Vie
     }
 
     @Override
-    public void openUserActivity(User user) {
+    public void setLoading(boolean loading) {
+        if (loading) followersRecyclerViewAdapter.addLoadingFooter();
+        else followersRecyclerViewAdapter.removeLoadingFooter();
+    }
+
+    @Override
+    public void addItems(List<User> items) {
+        followersRecyclerViewAdapter.addItems(items);
+    }
+
+    @Override
+    public void navigateToUser(User user) {
         Intent intent = new Intent(getContext(), MainActivity.class);
         intent.putExtra(MainActivity.CURRENT_USER_KEY, user);
         startActivity(intent);
-    }
-
-    @Override
-    public void addFollowers(List<User> followers) {
-        followersRecyclerViewAdapter.addItems(followers);
-    }
-
-    @Override
-    public void setLoadingFooter(boolean loading) {
-        if (loading) followersRecyclerViewAdapter.addLoadingFooter();
-        else followersRecyclerViewAdapter.removeLoadingFooter();
     }
 
     /**
@@ -259,7 +260,7 @@ public class FollowersFragment extends Fragment implements FollowerPresenter.Vie
          * data.
          */
         void loadMoreItems() {
-            presenter.getFollowers(user);
+            presenter.loadMoreItems();
         }
 
         /**

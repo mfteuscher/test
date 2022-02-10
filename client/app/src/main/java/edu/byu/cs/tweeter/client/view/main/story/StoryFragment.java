@@ -32,6 +32,7 @@ import java.util.List;
 
 import edu.byu.cs.client.R;
 import edu.byu.cs.tweeter.client.presenter.StoryPresenter;
+import edu.byu.cs.tweeter.client.presenter.view.PagedView;
 import edu.byu.cs.tweeter.client.view.main.MainActivity;
 import edu.byu.cs.tweeter.model.domain.Status;
 import edu.byu.cs.tweeter.model.domain.User;
@@ -39,7 +40,7 @@ import edu.byu.cs.tweeter.model.domain.User;
 /**
  * Implements the "Story" tab.
  */
-public class StoryFragment extends Fragment implements StoryPresenter.View {
+public class StoryFragment extends Fragment implements PagedView<Status> {
     private static final String LOG_TAG = "StoryFragment";
     private static final String USER_KEY = "UserKey";
 
@@ -87,18 +88,24 @@ public class StoryFragment extends Fragment implements StoryPresenter.View {
         storyRecyclerView.addOnScrollListener(new StoryRecyclerViewPaginationScrollListener(layoutManager));
 
         presenter = new StoryPresenter(this);
-        presenter.loadMoreItems(user);
+        presenter.loadMoreItems();
 
         return view;
     }
 
     @Override
-    public void addItems(List<Status> newStory) {
-        storyRecyclerViewAdapter.addItems(newStory);
+    public void setLoading(boolean loading) {
+        if (loading) storyRecyclerViewAdapter.addLoadingFooter();
+        else storyRecyclerViewAdapter.removeLoadingFooter();
     }
 
     @Override
-    public void openUserActivity(User user) {
+    public void addItems(List<Status> items) {
+        storyRecyclerViewAdapter.addItems(items);
+    }
+
+    @Override
+    public void navigateToUser(User user) {
         Intent intent = new Intent(getContext(), MainActivity.class);
         intent.putExtra(MainActivity.CURRENT_USER_KEY, user);
         startActivity(intent);
@@ -107,12 +114,6 @@ public class StoryFragment extends Fragment implements StoryPresenter.View {
     @Override
     public void displayMessage(String message) {
         Toast.makeText(getContext(), message, Toast.LENGTH_LONG).show();
-    }
-
-    @Override
-    public void setLoadingFooter(boolean loading) {
-        if (loading) storyRecyclerViewAdapter.addLoadingFooter();
-        else storyRecyclerViewAdapter.removeLoadingFooter();
     }
 
     /**
@@ -314,7 +315,7 @@ public class StoryFragment extends Fragment implements StoryPresenter.View {
          * data.
          */
         void loadMoreItems() {
-            presenter.loadMoreItems(user);
+            presenter.loadMoreItems();
         }
 
         /**

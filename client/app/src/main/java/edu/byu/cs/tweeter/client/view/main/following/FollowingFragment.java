@@ -25,13 +25,14 @@ import java.util.List;
 
 import edu.byu.cs.client.R;
 import edu.byu.cs.tweeter.client.presenter.FollowingPresenter;
+import edu.byu.cs.tweeter.client.presenter.view.PagedView;
 import edu.byu.cs.tweeter.client.view.main.MainActivity;
 import edu.byu.cs.tweeter.model.domain.User;
 
 /**
  * Implements the "Following" tab.
  */
-public class FollowingFragment extends Fragment implements FollowingPresenter.View {
+public class FollowingFragment extends Fragment implements PagedView<User> {
 
     private static final String LOG_TAG = "FollowingFragment";
     private static final String USER_KEY = "UserKey";
@@ -79,32 +80,32 @@ public class FollowingFragment extends Fragment implements FollowingPresenter.Vi
 
         followingRecyclerView.addOnScrollListener(new FollowRecyclerViewPaginationScrollListener(layoutManager));
         presenter = new FollowingPresenter(this);
-        presenter.loadMoreItems(user);
+        presenter.loadMoreItems();
 
         return view;
     }
 
     @Override
-    public void addFollowees(List<User> followees) {
-        followingRecyclerViewAdapter.addItems(followees);
+    public void setLoading(boolean loading) {
+        if (loading) followingRecyclerViewAdapter.addLoadingFooter();
+        else followingRecyclerViewAdapter.removeLoadingFooter();
     }
 
     @Override
-    public void openUserActivity(User user) {
+    public void addItems(List<User> items) {
+        followingRecyclerViewAdapter.addItems(items);
+    }
+
+    @Override
+    public void navigateToUser(User user) {
         Intent intent = new Intent(getContext(), MainActivity.class);
         intent.putExtra(MainActivity.CURRENT_USER_KEY, user);
         startActivity(intent);
     }
 
     @Override
-    public void displayErrorMessage(String message) {
+    public void displayMessage(String message) {
         Toast.makeText(getContext(), message, Toast.LENGTH_LONG).show();
-    }
-
-    @Override
-    public void setLoadingStatus(boolean loading) {
-        if (loading) followingRecyclerViewAdapter.addLoadingFooter();
-        else followingRecyclerViewAdapter.removeLoadingFooter();
     }
 
     /**
@@ -252,7 +253,7 @@ public class FollowingFragment extends Fragment implements FollowingPresenter.Vi
          * data.
          */
         void loadMoreItems() {
-            presenter.loadMoreItems(user);
+            presenter.loadMoreItems();
         }
 
         /**

@@ -18,13 +18,14 @@ import androidx.fragment.app.Fragment;
 
 import edu.byu.cs.client.R;
 import edu.byu.cs.tweeter.client.presenter.RegisterPresenter;
+import edu.byu.cs.tweeter.client.presenter.view.AuthenticatedView;
 import edu.byu.cs.tweeter.client.view.main.MainActivity;
 import edu.byu.cs.tweeter.model.domain.User;
 
 /**
  * Implements the register screen.
  */
-public class RegisterFragment extends Fragment implements RegisterPresenter.View {
+public class RegisterFragment extends Fragment implements AuthenticatedView {
     private static final String LOG_TAG = "RegisterFragment";
     private static final int RESULT_IMAGE = 10;
 
@@ -102,12 +103,13 @@ public class RegisterFragment extends Fragment implements RegisterPresenter.View
         }
     }
 
+
     @Override
-    public void successfullyRegistered(User registeredUser) {
+    public void authenticated(User user) {
         Intent intent = new Intent(getContext(), MainActivity.class);
-        intent.putExtra(MainActivity.CURRENT_USER_KEY, registeredUser);
+        intent.putExtra(MainActivity.CURRENT_USER_KEY, user);
         registeringToast.cancel();
-        Toast.makeText(getContext(), "Hello " + registeredUser.getName(), Toast.LENGTH_LONG).show();
+        Toast.makeText(getContext(), "Hello " + user.getName(), Toast.LENGTH_LONG).show();
         try {
             startActivity(intent);
         } catch (Exception e) {
@@ -119,4 +121,5 @@ public class RegisterFragment extends Fragment implements RegisterPresenter.View
     public void displayMessage(String message) {
         Toast.makeText(getContext(), message, Toast.LENGTH_LONG).show();
     }
+
 }
