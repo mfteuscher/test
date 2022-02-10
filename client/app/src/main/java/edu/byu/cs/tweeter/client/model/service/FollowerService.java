@@ -16,6 +16,7 @@ import edu.byu.cs.tweeter.client.model.service.backgroundTask.GetFollowersTask;
 import edu.byu.cs.tweeter.client.model.service.backgroundTask.GetFollowingCountTask;
 import edu.byu.cs.tweeter.client.model.service.backgroundTask.GetFollowingTask;
 import edu.byu.cs.tweeter.client.model.service.backgroundTask.IsFollowerTask;
+import edu.byu.cs.tweeter.client.model.service.backgroundTask.PagedTask;
 import edu.byu.cs.tweeter.client.model.service.backgroundTask.UnfollowTask;
 import edu.byu.cs.tweeter.client.presenter.MainPresenter;
 import edu.byu.cs.tweeter.model.domain.User;
@@ -156,7 +157,7 @@ public class FollowerService {
         public void handleMessage(@NonNull Message msg) {
             boolean success = msg.getData().getBoolean(GetFollowersTask.SUCCESS_KEY);
             if (success) {
-                List<User> followers = (List<User>) msg.getData().getSerializable(GetFollowersTask.FOLLOWERS_KEY);
+                List<User> followers = (List<User>) msg.getData().getSerializable(PagedTask.ITEMS_KEY);
                 boolean hasMorePages = msg.getData().getBoolean(GetFollowersTask.MORE_PAGES_KEY);
                 User lastFollower = (followers.size() > 0) ? followers.get(followers.size() - 1) : null;
                 observer.handleSuccess(followers, hasMorePages, lastFollower);
@@ -184,7 +185,7 @@ public class FollowerService {
         public void handleMessage(@NonNull Message msg) {
             boolean success = msg.getData().getBoolean(GetFollowingTask.SUCCESS_KEY);
             if (success) {
-                List<User> followees = (List<User>) msg.getData().getSerializable(GetFollowingTask.FOLLOWEES_KEY);
+                List<User> followees = (List<User>) msg.getData().getSerializable(PagedTask.ITEMS_KEY);
                 boolean hasMorePages = msg.getData().getBoolean(GetFollowingTask.MORE_PAGES_KEY);
                 observer.handleSuccess(followees, hasMorePages);
             } else if (msg.getData().containsKey(GetFollowingTask.MESSAGE_KEY)) {
