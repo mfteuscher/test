@@ -4,7 +4,7 @@ import android.os.Handler;
 
 import edu.byu.cs.tweeter.model.domain.AuthToken;
 
-public abstract class AuthenticatedTask extends BackgroundTask{
+public abstract class AuthenticatedTask extends BackgroundTask {
 
     /**
      * Auth token for logged-in user.

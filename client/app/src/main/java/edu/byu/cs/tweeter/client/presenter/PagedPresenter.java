@@ -24,10 +24,6 @@ public abstract class PagedPresenter<T> extends Presenter {
         super(view);
     }
 
-    /**
-     * Causes the Adapter to display a loading footer and make a request to get more story
-     * data.
-     */
     public void loadMoreItems() {
         if (!isLoading) {  // This guard is important for avoiding a race condition in the scrolling code.
             isLoading = true;
@@ -42,7 +38,7 @@ public abstract class PagedPresenter<T> extends Presenter {
 
     protected abstract void getItems(AuthToken authToken, User targetUser, int pageSize, T lastItem);
 
-    protected abstract String getDescription();
+    protected abstract String getPagedActionType();
 
     protected class GetPagedObserver extends Observer implements PagedObserver<T> {
 
@@ -57,7 +53,7 @@ public abstract class PagedPresenter<T> extends Presenter {
 
         @Override
         protected String getActionType() {
-            return getDescription();
+            return getPagedActionType();
         }
     }
 
