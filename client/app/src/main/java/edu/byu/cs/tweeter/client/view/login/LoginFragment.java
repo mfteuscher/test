@@ -54,7 +54,7 @@ public class LoginFragment extends Fragment implements AuthenticatedView {
         loginButton.setOnClickListener(listener -> {
             // Login and move to MainActivity.
             try {
-                presenter.validateLogin(alias.getText(), password.getText());
+                presenter.validate(alias.getText(), password.getText());
                 errorView.setText(null);
 
                 loginInToast = Toast.makeText(getContext(), "Logging In...", Toast.LENGTH_LONG);

@@ -17,7 +17,7 @@ public class RegisterPresenter extends AuthenticationPresenter {
     }
 
     @Override
-    protected String getMessage() {
+    protected String getAuthenticationActionType() {
         return "register";
     }
 
@@ -37,23 +37,12 @@ public class RegisterPresenter extends AuthenticationPresenter {
 
     public void validateRegistration(Editable firstName, Editable lastName, Editable alias,
                                      Editable password, ImageView imageToUpload) throws IllegalArgumentException {
-        if (firstName.length() == 0) {
+        validate(alias, password);
+        if (isFieldEmpty(firstName)) {
             throw new IllegalArgumentException("First Name cannot be empty.");
         }
-        if (lastName.length() == 0) {
+        if (isFieldEmpty(lastName)) {
             throw new IllegalArgumentException("Last Name cannot be empty.");
-        }
-        if (alias.length() == 0) {
-            throw new IllegalArgumentException("Alias cannot be empty.");
-        }
-        if (alias.charAt(0) != '@') {
-            throw new IllegalArgumentException("Alias must begin with @.");
-        }
-        if (alias.length() < 2) {
-            throw new IllegalArgumentException("Alias must contain 1 or more characters after the @.");
-        }
-        if (password.length() == 0) {
-            throw new IllegalArgumentException("Password cannot be empty.");
         }
         if (imageToUpload.getDrawable() == null) {
             throw new IllegalArgumentException("Profile image must be uploaded.");
