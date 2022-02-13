@@ -1,17 +1,13 @@
 package edu.byu.cs.tweeter.client.presenter;
 
-import edu.byu.cs.tweeter.client.model.service.FollowerService;
 import edu.byu.cs.tweeter.client.presenter.view.PagedView;
 import edu.byu.cs.tweeter.model.domain.AuthToken;
 import edu.byu.cs.tweeter.model.domain.User;
 
-public class FollowerPresenter extends PagedPresenter<User> {
-
-    private final FollowerService followerService;
+public class FollowerPresenter extends FollowerPagedPresenter {
 
     public FollowerPresenter(PagedView<User> view) {
         super(view);
-        this.followerService = new FollowerService();
     }
 
     @Override
@@ -20,7 +16,7 @@ public class FollowerPresenter extends PagedPresenter<User> {
     }
 
     @Override
-    protected String getDescription() {
+    protected String getPagedActionType() {
         return "get followers";
     }
 
