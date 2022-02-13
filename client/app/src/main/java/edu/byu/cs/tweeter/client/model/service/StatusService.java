@@ -88,29 +88,15 @@ public class StatusService {
     }
 
     private int findUrlEndIndex(String word) {
-        if (word.contains(".com")) {
-            int index = word.indexOf(".com");
-            index += 4;
-            return index;
-        } else if (word.contains(".org")) {
-            int index = word.indexOf(".org");
-            index += 4;
-            return index;
-        } else if (word.contains(".edu")) {
-            int index = word.indexOf(".edu");
-            index += 4;
-            return index;
-        } else if (word.contains(".net")) {
-            int index = word.indexOf(".net");
-            index += 4;
-            return index;
-        } else if (word.contains(".mil")) {
-            int index = word.indexOf(".mil");
-            index += 4;
-            return index;
-        } else {
-            return word.length();
+        String[] urlEndIndexes = {".com", ".org", ".edu", ".net", ".mil"};
+        for (String endIndex : urlEndIndexes) {
+            if (word.contains(endIndex)) {
+                int index = word.indexOf(endIndex);
+                index += 4;
+                return index;
+            }
         }
+        return word.length();
     }
 
 }
