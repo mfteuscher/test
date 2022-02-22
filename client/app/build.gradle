@@ -21,6 +21,11 @@ android {
         sourceCompatibility = 11
         targetCompatibility = 11
     }
+    testOptions {
+        unitTests.all {
+            useJUnitPlatform()
+        }
+    }
 }
 
 dependencies {
@@ -40,11 +45,13 @@ dependencies {
 
     // Testing related dependencies
 
-    // Intentionally using JUnit 4, so styles match Mockito, etc
-    testImplementation group: 'junit', name: 'junit', version: '4.13.2'
+    // https://mvnrepository.com/artifact/org.junit.jupiter/junit-jupiter
+    testImplementation group: 'org.junit.jupiter', name: 'junit-jupiter', version: '5.8.2'
 
     // requires test/resources/mockito-extensions/org.mockito.plugins.MockMaker to have content "mock-maker-inline"
-    testImplementation group: 'org.mockito', name: 'mockito-core', version: '4.0.0'
+    // https://mvnrepository.com/artifact/org.mockito/mockito-core
+    testImplementation group: 'org.mockito', name: 'mockito-core', version: '4.3.1'
+
 
     androidTestImplementation group: 'org.mockito', name: 'mockito-android', version: '4.0.0'
     androidTestImplementation 'androidx.test.espresso:espresso-core:3.4.0'
