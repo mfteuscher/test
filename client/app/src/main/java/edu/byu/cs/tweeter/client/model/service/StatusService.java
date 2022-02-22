@@ -21,8 +21,6 @@ import edu.byu.cs.tweeter.model.domain.User;
 
 public class StatusService {
 
-    private static final int PAGE_SIZE = 10;
-
     public void PostStatus(String post, SimpleNotificationObserver postStatusObserver) {
         try {
             Status newStatus = new Status(post, Cache.getInstance().getCurrUser(),
@@ -37,15 +35,15 @@ public class StatusService {
         }
     }
 
-    public void GetStory(User user, Status lastStatus, PagedObserver<Status> observer) {
+    public void GetStory(User user, Status lastStatus, int pageSize, PagedObserver<Status> observer) {
         GetStoryTask getStoryTask = new GetStoryTask(Cache.getInstance().getCurrUserAuthToken(),
-                user, PAGE_SIZE, lastStatus, new PagedTaskHandler<>(observer));
+                user, pageSize, lastStatus, new PagedTaskHandler<>(observer));
         Task.executeTask(getStoryTask);
     }
 
-    public void GetFeed(User user, Status lastStatus, PagedObserver<Status> observer) {
+    public void GetFeed(User user, Status lastStatus, int pageSize, PagedObserver<Status> observer) {
         GetFeedTask getFeedTask = new GetFeedTask(Cache.getInstance().getCurrUserAuthToken(),
-                user, PAGE_SIZE, lastStatus, new PagedTaskHandler<>(observer));
+                user, pageSize, lastStatus, new PagedTaskHandler<>(observer));
         Task.executeTask(getFeedTask);
     }
 

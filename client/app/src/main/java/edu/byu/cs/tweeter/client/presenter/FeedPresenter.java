@@ -13,7 +13,7 @@ public class FeedPresenter extends StatusPagedPresenter {
 
     @Override
     protected void getItems(AuthToken authToken, User targetUser, int pageSize, Status lastItem) {
-        statusService.GetFeed(targetUser, lastItem, new GetPagedObserver());
+        statusService.GetFeed(targetUser, lastItem, pageSize, new GetPagedObserver());
     }
 
     @Override

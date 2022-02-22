@@ -14,7 +14,7 @@ public class StoryPresenter extends StatusPagedPresenter {
 
     @Override
     protected void getItems(AuthToken authToken, User targetUser, int pageSize, Status lastItem) {
-            statusService.GetStory(targetUser, lastItem, new GetPagedObserver());
+            statusService.GetStory(targetUser, lastItem, pageSize, new GetPagedObserver());
     }
 
     @Override
