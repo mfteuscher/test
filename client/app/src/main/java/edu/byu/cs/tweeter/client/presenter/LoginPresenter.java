@@ -1,11 +1,11 @@
 package edu.byu.cs.tweeter.client.presenter;
 
-import edu.byu.cs.tweeter.client.presenter.view.AuthenticatedView;
+import edu.byu.cs.tweeter.client.presenter.view.AuthenticateView;
 
 public class LoginPresenter extends AuthenticationPresenter {
 
 
-    public LoginPresenter(AuthenticatedView view) {
+    public LoginPresenter(AuthenticateView view) {
         super(view);
     }
 
@@ -15,7 +15,7 @@ public class LoginPresenter extends AuthenticationPresenter {
     }
 
     public void login(String alias, String password){
-        userService.login(alias, password, new AuthenticatedObserver());
+        userService.login(alias, password, new AuthenticationObserver());
     }
 
 }

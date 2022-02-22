@@ -15,14 +15,14 @@ import androidx.fragment.app.Fragment;
 import edu.byu.cs.client.R;
 import edu.byu.cs.tweeter.client.cache.Cache;
 import edu.byu.cs.tweeter.client.presenter.LoginPresenter;
-import edu.byu.cs.tweeter.client.presenter.view.AuthenticatedView;
+import edu.byu.cs.tweeter.client.presenter.view.AuthenticateView;
 import edu.byu.cs.tweeter.client.view.main.MainActivity;
 import edu.byu.cs.tweeter.model.domain.User;
 
 /**
  * Implements the login screen.
  */
-public class LoginFragment extends Fragment implements AuthenticatedView {
+public class LoginFragment extends Fragment implements AuthenticateView {
     private static final String LOG_TAG = "LoginFragment";
 
     LoginPresenter presenter;

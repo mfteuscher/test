@@ -8,11 +8,11 @@ import android.widget.ImageView;
 import java.io.ByteArrayOutputStream;
 import java.util.Base64;
 
-import edu.byu.cs.tweeter.client.presenter.view.AuthenticatedView;
+import edu.byu.cs.tweeter.client.presenter.view.AuthenticateView;
 
 public class RegisterPresenter extends AuthenticationPresenter {
 
-    public RegisterPresenter(AuthenticatedView view) {
+    public RegisterPresenter(AuthenticateView view) {
         super(view);
     }
 
@@ -32,7 +32,7 @@ public class RegisterPresenter extends AuthenticationPresenter {
         // Intentionally, Use the java Base64 encoder so it is compatible with M4.
         String imageBytesBase64 = Base64.getEncoder().encodeToString(imageBytes);
 
-        userService.registerUser(firstName, lastName, alias, password, imageBytesBase64, new AuthenticatedObserver());
+        userService.registerUser(firstName, lastName, alias, password, imageBytesBase64, new AuthenticationObserver());
     }
 
     public void validateRegistration(Editable firstName, Editable lastName, Editable alias,
