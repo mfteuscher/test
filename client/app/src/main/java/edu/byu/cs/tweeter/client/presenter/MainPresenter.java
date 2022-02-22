@@ -19,6 +19,12 @@ public class MainPresenter extends Presenter {
         statusService = new StatusService();
     }
 
+    public MainPresenter(Activity activity, StatusService statusService) {
+        super(activity);
+        followerService = new FollowerService();
+        this.statusService = statusService;
+    }
+
     public interface Activity extends View {
         void updateFollowersCount(int count);
         void updateFollowingCount(int count);
